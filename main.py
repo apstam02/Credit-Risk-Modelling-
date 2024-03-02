@@ -9,10 +9,10 @@ from datetime import datetime
 import datetime as dt
 import yfinance as yf
 
-#This code is part of Market Implied PD Extration explanatory Report published by AUEBs' Investment and Finance Club.
+#This code is part of the Market Implied PD Extraction explanatory Report published by AUEBs' Investment and Finance Club.
 
 ticker='PPC.AT'
-#Starting data preperation process - Downloading Historical Equity Market Prices for MYTIL:GA
+#Starting data preparation process - Downloading Historical Equity Market Prices for PPC.AT
 def data(ticker,start,end):
     data = pd.DataFrame(yf.download(ticker,start,end)['Close'])
     data['Close'].loc[:'2021-11-16'] = data['Close'].loc[:'2021-11-16'] * 232e06
@@ -23,7 +23,7 @@ end = datetime(2024, 1, 24) - dt.timedelta(days=23)
 start = end - dt.timedelta(days=2547)
 data_matrix = data(ticker,start,end)
 
-#Input of MYTIL:GA Liabilities data and organizing them into a singe DataFrame, alongside Equity Prices
+#Input of PPC.AT Liabilities data and organizing them into a singe DataFrame, alongside Equity Prices
 total_liabilities = list()
 default_point = list()
 start_dp = 6.234e09
@@ -65,7 +65,7 @@ data_matrix['Risk Free Log Rate'] =rfr['Close'].iloc[0:1736].values
 data_matrix['Liabilities BV'] = total_liabilities
 data_matrix['Default Point'] = default_point
 
-#Estimating initial Asset Value and Asset Sigma via iteration process (minimizing the SSE of Observed Hisotrical Equity Price and theoretical Equity Price implied by BLS formula. In the first iteration we guess Asset Value as the BV of Assets).
+#Estimating initial Asset Value and Asset Sigma via iteration process (minimizing the SSE of guessed Asset Value and theoretical Asset Value implied by BLS formula. In the first iteration we guess Asset Value as the BV of Assets).
 def AssetValue_Sigma_Estimation(data_matrix):
     initial_asset_guess = (data_matrix['Equity MV'] + data_matrix['Liabilities BV']).to_numpy()
     equity = data_matrix['Equity MV'].to_numpy()
@@ -101,7 +101,6 @@ asse_std = np.std([np.log(optimized_asset_ts[i + 1] / optimized_asset_ts[i]) for
 equity_std = np.std([np.log(last_year_dm['Equity MV'].iloc[i+1]/last_year_dm['Equity MV'].iloc[i]) for i in range(len(optimized_asset_ts) - 1)])* np.sqrt(252)
 print(equity_std)
 print(asse_std)
-
 
 def PD1Y(asset_initial, sigma, default_point, rf, T):
    d2 = (np.log(asset_initial/default_point)+(rf - (sigma**2)/2)*T)/sigma*np.sqrt(T)
