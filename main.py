@@ -23,7 +23,8 @@ end = datetime(2024, 1, 24) - dt.timedelta(days=23)
 start = end - dt.timedelta(days=2547)
 data_matrix = data(ticker,start,end)
 
-#Input of PPC.AT Liabilities data and organizing them into a singe DataFrame, alongside Equity Prices
+#Input of PPC.AT Liabilities data and Drift Point and organizing them into a singe DataFrame, alongside Equity Prices
+
 total_liabilities = list()
 default_point = list()
 start_dp = 6.234e09
@@ -55,7 +56,8 @@ for i in range(248):
     total_liabilities.append(14.500e9)
     default_point.append(start_dp)
 
-#Importing and organizing Risk Free Data (source: marketwatch.com)
+#Importing and organizing Risk Free Data (source: local excel file imported from marketwatch.com)
+
 rfr = pd.read_excel('ggb yields.xlsx')
 rfr['Date'] = pd.to_datetime(rfr['Date'])
 rfr= rfr.sort_index(ascending=False)
@@ -66,6 +68,7 @@ data_matrix['Liabilities BV'] = total_liabilities
 data_matrix['Default Point'] = default_point
 
 #Estimating initial Asset Value and Asset Sigma via iteration process (minimizing the SSE of guessed Asset Value and theoretical Asset Value implied by BLS formula. In the first iteration we guess Asset Value as the BV of Assets).
+
 def AssetValue_Sigma_Estimation(data_matrix):
     initial_asset_guess = (data_matrix['Equity MV'] + data_matrix['Liabilities BV']).to_numpy()
     equity = data_matrix['Equity MV'].to_numpy()
@@ -115,7 +118,43 @@ T = 1
 result = round(PD1Y(Ao, astd, def_point, rskfree, T)*100,10)
 print(f'Probability of Default over the next year for {ticker} is: {result} %')
 
+#Additionally, performing Monte Carlo simulation for Asset Value. Brownian Motion based on the historical mean and sigma, 252 steps (1 year), and 200 simulations.
 
+data_time_series = last_year_dm
+def montecarlo(data_time_series):
+    log = [np.log(data_time_series[i+1]/data_time_series[i]) for i in range(len(data_time_series)-1)]
+    av = np.mean(log)
+    std = np.std(log)*np.sqrt(258)
+    initial_price = data_time_series.iloc[-1]
+    num_simulations = 200
+    steps = 252
+    dt = 1/steps
+    np.random.seed(42)
+    simulations = list()
+    for i in range(num_simulations):
+        increments = np.random.normal(loc=av*dt, scale=std*np.sqrt(dt), size=steps)
+        brownian_motion = np.cumsum(increments)
+        asset_value = initial_price * np.exp(brownian_motion)
+        simulations.append(asset_value)
+    pd.DataFrame(simulations)
+    return simulations
+
+#Graphing historical Asset Value performance (based on estimation through the above-mentioned iteration process) and modelling estimated Future Value, via the Monte Carlo simulation
+
+axis1 = np.arange(-len(optimized_asset_ts),0,1)
+axis2 = np.arange(len(optimized_asset_ts)+1)
+plt.gca().set_facecolor('#f0f0f0')
+plt.plot(axis1, optimized_asset_ts/1e09, lw=2)
+for i, j in enumerate(montecarlo(optimized_asset_ts/1e09)):
+    plt.plot(axis2,j)
+plt.grid(True)
+plt.gca().yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+plt.gca().ticklabel_format(axis='y', style='plain')
+plt.xlabel('Day')
+plt.ylabel('Asset Value in Billion EUR')
+plt.title('Monte Carlo Simulation on MYTIL:GA Assets')
+plt.axvline(x=0, linestyle='--',color='black')
+plt.show()
 
 
 
