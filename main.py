@@ -139,7 +139,7 @@ def montecarlo(data_time_series):
     pd.DataFrame(simulations)
     return simulations
 
-#Graphing historical Asset Value performance (based on estimation through the above-mentioned iteration process) and modelling estimated Future Value, via the Monte Carlo simulation
+#Graphing historical Asset Value performance (based on estimation through the above-mentioned iteration process) and modeling estimated Future Value, via the Monte Carlo simulation
 
 axis1 = np.arange(-len(optimized_asset_ts),0,1)
 axis2 = np.arange(len(optimized_asset_ts)+1)
@@ -152,7 +152,7 @@ plt.gca().yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
 plt.gca().ticklabel_format(axis='y', style='plain')
 plt.xlabel('Day')
 plt.ylabel('Asset Value in Billion EUR')
-plt.title('Monte Carlo Simulation on MYTIL:GA Assets')
+plt.title('Monte Carlo Simulation on PPC:GA Assets')
 plt.axvline(x=0, linestyle='--',color='black')
 plt.show()
 
